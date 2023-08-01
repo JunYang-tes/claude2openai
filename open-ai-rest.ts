@@ -39,39 +39,47 @@ handlers["/v1/chat/completions"] = async (req) => {
   } else {
     const encode = new TextEncoder();
     let msg = "";
+    let cancelled = false;
     const body = new ReadableStream({
       start(controller) {
         conversation.sendMessage(JSON.stringify(message), {
           progress(e) {
             const detal = e.completion.substring(msg.length);
             msg = e.completion;
-            controller.enqueue(
-              encode.encode(`data: ${
-                JSON.stringify({
-                  id: "id",
-                  object: "text_completion",
-                  mode: json.mode,
-                  "finish_reason": "stop",
-                  choices: [{
-                    message: {
-                      isFullText: true,
-                      content: JSON.stringify(e.completion),
-                    },
-                    delta: {
-                      content: detal.includes('"')
-                        ? JSON.stringify(detal)
-                        : detal,
-                    },
-                  }],
-                })
-              }\n\n`),
-            );
+            if (!cancelled) {
+              controller.enqueue(
+                encode.encode(`data: ${
+                  JSON.stringify({
+                    id: "id",
+                    object: "text_completion",
+                    mode: json.mode,
+                    "finish_reason": "stop",
+                    choices: [{
+                      message: {
+                        isFullText: true,
+                        content: JSON.stringify(e.completion),
+                      },
+                      delta: {
+                        content: detal.includes('"')
+                          ? JSON.stringify(detal)
+                          : detal,
+                      },
+                    }],
+                  })
+                }\n\n`),
+              );
+            }
           },
           done() {
-            controller.enqueue(encode.encode(`data: [DONE]\n\n`));
-            controller.close();
+            if (!cancelled) {
+              controller.enqueue(encode.encode(`data: [DONE]\n\n`));
+              controller.close();
+            }
           },
         });
+      },
+      cancel() {
+        cancelled = true;
       },
     });
     const resp = new Response(body, {
