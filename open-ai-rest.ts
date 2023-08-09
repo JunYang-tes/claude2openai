@@ -47,27 +47,31 @@ handlers["/v1/chat/completions"] = async (req) => {
             const detal = e.completion.substring(msg.length);
             msg = e.completion;
             if (!cancelled) {
-              controller.enqueue(
-                encode.encode(`data: ${
-                  JSON.stringify({
-                    id: "id",
-                    object: "text_completion",
-                    mode: json.mode,
-                    "finish_reason": "stop",
-                    choices: [{
-                      message: {
-                        isFullText: true,
-                        content: JSON.stringify(e.completion),
-                      },
-                      delta: {
-                        content: detal.includes('"')
-                          ? JSON.stringify(detal)
-                          : detal,
-                      },
-                    }],
-                  })
-                }\n\n`),
-              );
+              try {
+                controller.enqueue(
+                  encode.encode(`data: ${
+                    JSON.stringify({
+                      id: "id",
+                      object: "text_completion",
+                      mode: json.mode,
+                      "finish_reason": "stop",
+                      choices: [{
+                        message: {
+                          isFullText: true,
+                          content: JSON.stringify(e.completion),
+                        },
+                        delta: {
+                          content: detal.includes('"')
+                            ? JSON.stringify(detal)
+                            : detal,
+                        },
+                      }],
+                    })
+                  }\n\n`),
+                );
+              } catch (e) {
+                console.error(e);
+              }
             }
           },
           done() {
