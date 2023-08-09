@@ -38,14 +38,11 @@ handlers["/v1/chat/completions"] = async (req) => {
     return new Response(JSON.stringify(data));
   } else {
     const encode = new TextEncoder();
-    let msg = "";
     let cancelled = false;
     const body = new ReadableStream({
       start(controller) {
         conversation.sendMessage(JSON.stringify(message), {
           progress(e) {
-            const detal = e.completion.substring(msg.length);
-            msg = e.completion;
             if (!cancelled) {
               try {
                 controller.enqueue(
@@ -57,13 +54,11 @@ handlers["/v1/chat/completions"] = async (req) => {
                       "finish_reason": "stop",
                       choices: [{
                         message: {
-                          isFullText: true,
+                          isFullText: false,
                           content: JSON.stringify(e.completion),
                         },
                         delta: {
-                          content: detal.includes('"')
-                            ? JSON.stringify(detal)
-                            : detal,
+                          content: e.completion,
                         },
                       }],
                     })
